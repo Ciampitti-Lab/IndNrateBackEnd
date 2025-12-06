@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from scipy.interpolate import PchipInterpolator
 import numpy as np
+import psycopg2
 import os
 
 main = Blueprint('main', __name__)
@@ -27,57 +28,88 @@ def generate_eonr_fig():
     fig_creation_eonr(cell,grainPrice,nPrice)
     return jsonify({"url": "/static/images/fig2.html"})
 
+# DB information (Render Database)
+DB_CONFIG = {
+    'host': 'dpg-d4pf6np5pdvs73asbc60-a.oregon-postgres.render.com',
+    'dbname': 'apsimxpydb',
+    'user': 'jorgejola',
+    'password': 'Hb39h7DitoXgITE0ztX6srEiQPQsdo9Q',
+    'port': 5432
+}
 
 def fig_creation_aonr(cell):
-    simulations = pd.read_csv('static/simulations.csv')
+    conn = psycopg2.connect(**DB_CONFIG)
 
-    simulations['Yield'] = simulations['Yield'].astype(int)
-    simulations['id_cell'] = simulations['id_cell'].astype(int)
-    simulations['id_within_cell'] = simulations['id_within_cell'].astype(int)
+    simulations = pd.read_sql("SELECT * FROM simulations;", conn)
 
-    simulations['Yield'] = pd.to_numeric(simulations['Yield'], errors='coerce')
-    simulations['Nitrogen'] = pd.to_numeric(simulations['Nitrogen'], errors='coerce')
+    conn.close()
 
-    simulations = (
-        simulations
-            .groupby(['Nitrogen', 'region', 'id_cell', 'id_within_cell'], as_index=False)
-            .agg({'Yield': 'mean'})
-    )
+    simulations['yield'] = simulations['yield'].astype(int)
 
-    df_cell = simulations[simulations['id_cell'] == cell]
-
-    if df_cell.empty:
-        return
-
-    max_row = df_cell.loc[df_cell['Yield'].idxmax()]
+    sim_cell=simulations[simulations['id_cell']==cell]
+    max_row = sim_cell.loc[sim_cell ['yield'].idxmax()]
         
-    x = pd.to_numeric(df_cell['Nitrogen'], errors='coerce')
-    y = pd.to_numeric(df_cell['Yield'], errors='coerce')
+    x = pd.to_numeric(sim_cell['nitrogen'], errors='coerce')
+    y = pd.to_numeric(sim_cell['yield'], errors='coerce')
 
     pchip = PchipInterpolator(x, y)
     x_smooth = np.linspace(x.min(), x.max(), 200)
     y_smooth = pchip(x_smooth)
 
+
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=x_smooth, y=y_smooth, mode='lines',
-                             name='Yield Curve',
-                             line=dict(color='steelblue', width=3)))
-    fig.add_trace(go.Scatter(x=[max_row['Nitrogen']], y=[max_row['Yield']],
-                             mode='markers+text',
-                             name='Max Yield',
-                             marker=dict(color='red', size=12)))
-    fig.add_shape(type='line',
-                  x0=max_row['Nitrogen'], y0=0,
-                  x1=max_row['Nitrogen'], y1=max_row['Yield'],
-                  line=dict(color='green', width=3, dash='dash'))
+
+
+    fig.add_trace(go.Scatter(
+        x=x_smooth,
+        y=y_smooth,
+        mode='lines',
+        name='Yield Curve',
+        line=dict(color='steelblue', width=3),
+    ))
+
+
+    fig.add_trace(go.Scatter(
+        x=[max_row['nitrogen']],
+        y=[max_row['yield']],
+        mode='markers+text',
+        name='Max Yield',
+        marker=dict(color='red', size=12)
+    ))
+
+
+    fig.add_shape(
+        type='line',
+        x0=max_row['nitrogen'],
+        y0=0,
+        x1=max_row['nitrogen'],
+        y1=max_row['yield'],
+        line=dict(color='green', width=3, dash='dash'),
+        name='Max Line'
+    )
 
     fig.update_layout(
         xaxis_title='Nitrogen (kg/ha)',
         yaxis_title='Yield (t/ha)',
         plot_bgcolor='white',
-        xaxis=dict(showgrid=True, gridcolor='lightgrey', zeroline=False, showline=True, linecolor='black'),
-        yaxis=dict(showgrid=True, gridcolor='lightgrey', zeroline=False, showline=True, linecolor='black'),
-        legend=dict(bgcolor='rgba(0,0,0,0)', bordercolor='rgba(0,0,0,0)')
+        xaxis=dict(
+            showgrid=True,
+            gridcolor='lightgrey',
+            zeroline=False,
+            showline=True,
+            linecolor='black',
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor='lightgrey',
+            zeroline=False,
+            showline=True,
+            linecolor='black',
+        ),
+        legend=dict(
+            bgcolor='rgba(0,0,0,0)',
+            bordercolor='rgba(0,0,0,0)',
+        )
     )
     
 
@@ -85,32 +117,28 @@ def fig_creation_aonr(cell):
 
 
 def fig_creation_eonr(cell,grainPrice,nPrice):
-    simulations = pd.read_csv('static/simulations.csv')
+    conn = psycopg2.connect(**DB_CONFIG)
 
-    simulations['Yield'] = simulations['Yield'].astype(int)
-    simulations['id_cell'] = simulations['id_cell'].astype(int)
-    simulations['id_within_cell'] = simulations['id_within_cell'].astype(int)
+    simulations = pd.read_sql("SELECT * FROM simulations;", conn)
 
-    simulations['Yield'] = pd.to_numeric(simulations['Yield'], errors='coerce')
-    simulations['Nitrogen'] = pd.to_numeric(simulations['Nitrogen'], errors='coerce')
+    conn.close()
 
-    simulations = (
-        simulations
-            .groupby(['Nitrogen', 'region', 'id_cell', 'id_within_cell'], as_index=False)
-            .agg({'Yield': 'mean'})
-    )
+    simulations['yield'] = simulations['yield'].astype(int)
+
+    df_cell=simulations[simulations['id_cell']==cell]
+
 
     df_cell = simulations[simulations['id_cell'] == cell]
 
 
-    df_cell['Economic'] = df_cell['Yield'] * grainPrice - df_cell['Nitrogen'] * nPrice
+    df_cell['economic'] = df_cell['yield'] * grainPrice - df_cell['nitrogen'] * nPrice
 
 
-    max_row = df_cell.loc[df_cell['Economic'].idxmax()]
+    max_row = df_cell.loc[df_cell['economic'].idxmax()]
 
 
-    x = pd.to_numeric(df_cell['Nitrogen'], errors='coerce')
-    y = pd.to_numeric(df_cell['Economic'], errors='coerce')
+    x = pd.to_numeric(df_cell['nitrogen'], errors='coerce')
+    y = pd.to_numeric(df_cell['economic'], errors='coerce')
     pchip = PchipInterpolator(x, y)
     x_smooth = np.linspace(x.min(), x.max(), 200)
     y_smooth = pchip(x_smooth)
@@ -129,8 +157,8 @@ def fig_creation_eonr(cell,grainPrice,nPrice):
 
 
     fig.add_trace(go.Scatter(
-        x=[max_row['Nitrogen']],
-        y=[max_row['Economic']],
+        x=[max_row['nitrogen']],
+        y=[max_row['economic']],
         mode='markers+text',
         name='EONR',
         marker=dict(color='red', size=12)
@@ -139,10 +167,10 @@ def fig_creation_eonr(cell,grainPrice,nPrice):
 
     fig.add_shape(
         type='line',
-        x0=max_row['Nitrogen'],
+        x0=max_row['nitrogen'],
         y0=0,
-        x1=max_row['Nitrogen'],
-        y1=max_row['Economic'],
+        x1=max_row['nitrogen'],
+        y1=max_row['economic'],
         line=dict(color='green', width=3, dash='dash')
     )
 
