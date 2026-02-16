@@ -9,8 +9,8 @@ DROP TABLE IF EXISTS spatial_data;
 CREATE TABLE simulations(
     id_sim VARCHAR(64),
     id_cell INT,
-    nitrogen INT,
-    yield FLOAT,
+    nitro_kg_ha INT,
+    yield_kg_ha FLOAT,
     PRIMARY KEY(id_sim)
     );
 
