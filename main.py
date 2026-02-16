@@ -2,7 +2,6 @@ from flask import Flask, Blueprint, render_template, request, jsonify
 import geopandas as gpd
 import pandas as pd
 import plotly.graph_objects as go
-from scipy.interpolate import PchipInterpolator
 import numpy as np
 import psycopg2
 import os
@@ -30,7 +29,7 @@ def generate_eonr_fig():
 
 # DB information (Render Database)
 DB_CONFIG = {
-    'host': 'dpg-d69j6cpr0fns7384trhg-a',
+    'host': 'dpg-d69j6cpr0fns7384trhg-a.oregon-postgres.render.com', 
     'dbname': 'ind_rates_apsim_database',
     'user': 'ind_rates_apsim_database_user',
     'password': 'QmOUyd5ZIWbVctqd79rQvNCFLTEAZBst',
@@ -44,17 +43,14 @@ def fig_creation_aonr(cell):
 
     conn.close()
 
-    simulations['yield_kg_ha'] = simulations['yield_kg_ha'].astype(int)
+    simulations['yield_kg_ha'] = simulations['yield_kg_ha']
 
     sim_cell=simulations[simulations['id_cell']==cell]
     max_row = sim_cell.loc[sim_cell ['yield_kg_ha'].idxmax()]
-        
-    x = pd.to_numeric(sim_cell['nitro_kg_ha'], errors='coerce')
-    y = pd.to_numeric(sim_cell['yield_kg_ha'], errors='coerce')
 
-    pchip = PchipInterpolator(x, y)
-    x_smooth = np.linspace(x.min(), x.max(), 200)
-    y_smooth = pchip(x_smooth)
+
+    x_smooth = sim_cell['nitro_kg_ha']
+    y_smooth = sim_cell['yield_kg_ha']
 
 
     fig = go.Figure()
@@ -81,7 +77,7 @@ def fig_creation_aonr(cell):
     fig.add_shape(
         type='line',
         x0=max_row['nitro_kg_ha'],
-        y0=0,
+        y0=max_row['yield_kg_ha'],
         x1=max_row['nitro_kg_ha'],
         y1=max_row['yield_kg_ha'],
         line=dict(color='green', width=3, dash='dash'),
@@ -123,8 +119,6 @@ def fig_creation_eonr(cell,grainPrice,nPrice):
 
     conn.close()
 
-    simulations['yield_kg_ha'] = simulations['yield_kg_ha'].astype(int)
-
     df_cell=simulations[simulations['id_cell']==cell]
 
 
@@ -136,12 +130,8 @@ def fig_creation_eonr(cell,grainPrice,nPrice):
 
     max_row = df_cell.loc[df_cell['economic'].idxmax()]
 
-
-    x = pd.to_numeric(df_cell['nitro_kg_ha'], errors='coerce')
-    y = pd.to_numeric(df_cell['economic'], errors='coerce')
-    pchip = PchipInterpolator(x, y)
-    x_smooth = np.linspace(x.min(), x.max(), 200)
-    y_smooth = pchip(x_smooth)
+    x_smooth = df_cell['nitro_kg_ha']
+    y_smooth = df_cell['economic']
 
 
     fig = go.Figure()
@@ -168,7 +158,7 @@ def fig_creation_eonr(cell,grainPrice,nPrice):
     fig.add_shape(
         type='line',
         x0=max_row['nitro_kg_ha'],
-        y0=0,
+        y0=max_row['economic'],
         x1=max_row['nitro_kg_ha'],
         y1=max_row['economic'],
         line=dict(color='green', width=3, dash='dash')
