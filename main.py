@@ -30,10 +30,10 @@ def generate_eonr_fig():
 
 # DB information (Render Database)
 DB_CONFIG = {
-    'host': 'dpg-d4pf6np5pdvs73asbc60-a.oregon-postgres.render.com',
-    'dbname': 'apsimxpydb',
-    'user': 'jorgejola',
-    'password': 'Hb39h7DitoXgITE0ztX6srEiQPQsdo9Q',
+    'host': 'dpg-d69j6cpr0fns7384trhg-a',
+    'dbname': 'ind_rates_apsim_database',
+    'user': 'ind_rates_apsim_database_user',
+    'password': 'QmOUyd5ZIWbVctqd79rQvNCFLTEAZBst',
     'port': 5432
 }
 
@@ -44,13 +44,13 @@ def fig_creation_aonr(cell):
 
     conn.close()
 
-    simulations['yield'] = simulations['yield'].astype(int)
+    simulations['yield_kg_ha'] = simulations['yield_kg_ha'].astype(int)
 
     sim_cell=simulations[simulations['id_cell']==cell]
-    max_row = sim_cell.loc[sim_cell ['yield'].idxmax()]
+    max_row = sim_cell.loc[sim_cell ['yield_kg_ha'].idxmax()]
         
-    x = pd.to_numeric(sim_cell['nitrogen'], errors='coerce')
-    y = pd.to_numeric(sim_cell['yield'], errors='coerce')
+    x = pd.to_numeric(sim_cell['nitro_kg_ha'], errors='coerce')
+    y = pd.to_numeric(sim_cell['yield_kg_ha'], errors='coerce')
 
     pchip = PchipInterpolator(x, y)
     x_smooth = np.linspace(x.min(), x.max(), 200)
@@ -70,8 +70,8 @@ def fig_creation_aonr(cell):
 
 
     fig.add_trace(go.Scatter(
-        x=[max_row['nitrogen']],
-        y=[max_row['yield']],
+        x=[max_row['nitro_kg_ha']],
+        y=[max_row['yield_kg_ha']],
         mode='markers+text',
         name='Max Yield',
         marker=dict(color='red', size=12)
@@ -80,10 +80,10 @@ def fig_creation_aonr(cell):
 
     fig.add_shape(
         type='line',
-        x0=max_row['nitrogen'],
+        x0=max_row['nitro_kg_ha'],
         y0=0,
-        x1=max_row['nitrogen'],
-        y1=max_row['yield'],
+        x1=max_row['nitro_kg_ha'],
+        y1=max_row['yield_kg_ha'],
         line=dict(color='green', width=3, dash='dash'),
         name='Max Line'
     )
@@ -123,7 +123,7 @@ def fig_creation_eonr(cell,grainPrice,nPrice):
 
     conn.close()
 
-    simulations['yield'] = simulations['yield'].astype(int)
+    simulations['yield_kg_ha'] = simulations['yield_kg_ha'].astype(int)
 
     df_cell=simulations[simulations['id_cell']==cell]
 
@@ -131,13 +131,13 @@ def fig_creation_eonr(cell,grainPrice,nPrice):
     df_cell = simulations[simulations['id_cell'] == cell]
 
 
-    df_cell['economic'] = df_cell['yield'] * grainPrice - df_cell['nitrogen'] * nPrice
+    df_cell['economic'] = df_cell['yield_kg_ha'] * grainPrice - df_cell['nitro_kg_ha'] * nPrice
 
 
     max_row = df_cell.loc[df_cell['economic'].idxmax()]
 
 
-    x = pd.to_numeric(df_cell['nitrogen'], errors='coerce')
+    x = pd.to_numeric(df_cell['nitro_kg_ha'], errors='coerce')
     y = pd.to_numeric(df_cell['economic'], errors='coerce')
     pchip = PchipInterpolator(x, y)
     x_smooth = np.linspace(x.min(), x.max(), 200)
@@ -157,7 +157,7 @@ def fig_creation_eonr(cell,grainPrice,nPrice):
 
 
     fig.add_trace(go.Scatter(
-        x=[max_row['nitrogen']],
+        x=[max_row['nitro_kg_ha']],
         y=[max_row['economic']],
         mode='markers+text',
         name='EONR',
@@ -167,9 +167,9 @@ def fig_creation_eonr(cell,grainPrice,nPrice):
 
     fig.add_shape(
         type='line',
-        x0=max_row['nitrogen'],
+        x0=max_row['nitro_kg_ha'],
         y0=0,
-        x1=max_row['nitrogen'],
+        x1=max_row['nitro_kg_ha'],
         y1=max_row['economic'],
         line=dict(color='green', width=3, dash='dash')
     )
