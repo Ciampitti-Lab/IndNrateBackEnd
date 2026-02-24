@@ -1,5 +1,3 @@
 # IndNrate
-Web portal for statewide APSIM simulations (Front-end and backend)
+Web portal for statewide APSIM simulations (Backend)
 
-Deployed in the service platform render: 
-https://indnrate.onrender.com
