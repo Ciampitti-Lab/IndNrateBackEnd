@@ -6,7 +6,7 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/JorgeJola/indnrate-go/internal/database"
+	"github.com/JorgeJola/indnratebackend/internal/database"
 	"github.com/gin-gonic/gin" // Web Framework
 )
 

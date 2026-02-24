@@ -5,9 +5,9 @@ import (
 	"log"
 	"os" // access environment variables
 
-	"github.com/JorgeJola/indnrate-go/internal/models" // Load data structure for simulations
-	"github.com/jackc/pgx/v5/pgxpool"                  //Postgres SQL connection pool
-	"github.com/joho/godotenv"                         // Load .env file into environmental variables (Database credentials)
+	"github.com/JorgeJola/indnratebackend/internal/models" // Load data structure for simulations
+	"github.com/jackc/pgx/v5/pgxpool"                      //Postgres SQL connection pool
+	"github.com/joho/godotenv"                             // Load .env file into environmental variables (Database credentials)
 )
 
 var DB *pgxpool.Pool // Global variable that use the pool
