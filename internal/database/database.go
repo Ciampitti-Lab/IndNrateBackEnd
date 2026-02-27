@@ -36,7 +36,7 @@ func Connect() {
 	fmt.Println("Connected to PostgreSQL!")
 }
 
-func Query(cellID int)([]models.Simulation, error){
+func Query(cellID int, nitroPrice float64, grainPrice float64)([]models.Simulation, error){
 	rows,err := DB.Query(context.Background(),
 	"SELECT id_sim, id_cell, nitro_kg_ha, yield_kg_ha FROM simulations WHERE id_cell=$1",cellID)
 	if err != nil {
@@ -50,6 +50,11 @@ func Query(cellID int)([]models.Simulation, error){
             log.Println("Row scan error:", err)
             continue
         }
+		s.NitroPrice = nitroPrice
+		s.GrainPrice = grainPrice
+		s.NitroLbAc = s.NitroKgHa / 0.892
+		s.YieldBsAc = s.YieldKgHa * 15.9
+		s.Profit_dol = (s.YieldBsAc * s.GrainPrice) - (s.NitroLbAc * s.NitroPrice)
         sims = append(sims, s)
     }
 
