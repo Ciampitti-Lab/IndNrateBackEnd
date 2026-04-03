@@ -11,7 +11,9 @@ type Simulation struct{
 	Profit_dol float64 `json:"profit_dol"`
 }
 
-type Trials struct{
-	IDRegion string `json:"id_region`
-	AONR float64 `json:"aonr"`
+type Eonr struct {
+    IDTrial int     `json:"id_trial"`
+    Region  string  `json:"region"`
+    EONR    float64 `json:"eonr"`
+    Profit  float64 `json:"profit"`
 }

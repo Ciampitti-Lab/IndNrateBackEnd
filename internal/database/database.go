@@ -99,7 +99,7 @@ func buildDSNFromParts() string {
 	return u.String()
 }
 
-func Query_sim(cellID int, nitroPrice float64, grainPrice float64) ([]models.Simulation, error) {
+func QuerySim(cellID int, nitroPrice float64, grainPrice float64) ([]models.Simulation, error) {
 	rows, err := DB.Query(context.Background(),
 		"SELECT id_sim, id_cell, nitro_kg_ha, yield_kg_ha FROM simulations WHERE id_cell=$1", cellID)
 	if err != nil {
@@ -129,31 +129,69 @@ func Query_sim(cellID int, nitroPrice float64, grainPrice float64) ([]models.Sim
 	return sims, nil
 }
 
-func Query_trials(regionID string) ([]models.Trials, error) {
+func QueryEonrCount(regionID string, nitroPrice float64, grainPrice float64) ([]models.Eonr, error) {
 	rows, err := DB.Query(context.Background(),
-		"SELECT id_region, aonr FROM on_farm WHERE id_region=$1", regionID)
+		"SELECT id_trial, nitro_kg_ha, yield_kg_ha, id_region FROM on_farm WHERE id_region=$1", regionID)
 	if err != nil {
 		log.Printf("database query error: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
 
-	var trials []models.Trials
+	trials := make(map[int][]struct {
+		N float64
+		Y float64
+		R string
+	})
 
     for rows.Next() {
-        var t models.Trials
-        // Match the columns in your SELECT statement: id_region, aonr
-        if err := rows.Scan(&t.IDRegion, &t.AONR); err != nil {
-            log.Println("Row scan error:", err)
-            continue
-        }
-        trials = append(trials, t)
-    }
+		var idTrial int
+		var nitro, yield float64
+		var region string
 
+		if err := rows.Scan(&idTrial, &nitro, &yield, &region); err != nil {
+			log.Println("Row scan error:", err)
+			continue
+		}
+
+		trials[idTrial] = append(trials[idTrial], struct {
+			N float64
+			Y float64
+			R string
+		}{nitro, yield, region})
+	}
 
 	if err := rows.Err(); err != nil {
-		log.Printf("database rows error: %v", err)
 		return nil, err
 	}
-	return trials, nil
+
+
+	var results []models.Eonr
+
+	for idTrial, data := range trials {
+
+		maxProfit := -1e18
+		eonr := 0.0
+		region := data[0].R
+
+		for _, d := range data {
+			profit := d.Y*grainPrice - d.N*nitroPrice
+
+			if profit > maxProfit {
+				maxProfit = profit
+				eonr = d.N
+			} else if profit == maxProfit && d.N < eonr {
+				eonr = d.N
+			}
+		}
+
+		results = append(results, models.Eonr{
+			IDTrial: idTrial,
+			Region:  region,
+			EONR:    eonr,
+			Profit:  maxProfit,
+		})
+	}
+
+	return results, nil
 }

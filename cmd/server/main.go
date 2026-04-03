@@ -40,7 +40,7 @@ func main() {
 		})
 	})
 
-	router.GET("/onfarmtrials", func(c *gin.Context) {
+	router.GET("/onfarmtrials/eonr_count", func(c *gin.Context) {
 
     regionID := c.Query("region")
 
@@ -49,8 +49,37 @@ func main() {
         return
     }
 
+	// Optional parameters (Nitrogen and grain price)
+	nitroPriceStr := c.Query("nitro_price")
+	var err error
+	var nitroPrice float64
+
+	if nitroPriceStr != "" {
+		nitroPrice,err = strconv.ParseFloat(nitroPriceStr,64)
+		if err != nil{
+			c.JSON(400, gin.H{"error" : "Nitrogen price should be a number (Float)"})
+			return
+		}
+	} else {
+		nitroPrice = 0.4
+	}
+
+	grainPriceStr := c.Query("grain_price")
+
+	var grainPrice float64
+
+	if grainPriceStr != "" {
+		grainPrice,err = strconv.ParseFloat(grainPriceStr,64)
+		if err !=nil{
+			c.JSON(400, gin.H{"error":"Grain price should be a number (Float)"})
+			return
+		}
+	} else{
+		grainPrice = 4
+	}
+
 	// Quering database
-    onfarm, err := database.Query_trials(regionID)
+    onfarm, err := database.QueryEonrCount(regionID, nitroPrice, grainPrice)
     if err != nil {
 		fmt.Printf("Database error: %v\n", err)
         c.JSON(500, gin.H{"error": "database query failed"})
@@ -104,7 +133,7 @@ func main() {
 		grainPrice = 4
 	}
 	// Quering database
-    sims, err := database.Query_sim(cellID, nitroPrice, grainPrice)
+    sims, err := database.QuerySim(cellID, nitroPrice, grainPrice)
     if err != nil {
         c.JSON(500, gin.H{"error": "database query failed"})
         return
