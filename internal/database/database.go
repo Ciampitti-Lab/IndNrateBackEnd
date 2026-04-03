@@ -129,7 +129,7 @@ func Query_sim(cellID int, nitroPrice float64, grainPrice float64) ([]models.Sim
 	return sims, nil
 }
 
-func Query_trials(regionID string) ([]models.Simulation, error) {
+func Query_trials(regionID string) ([]models.Trials, error) {
 	rows, err := DB.Query(context.Background(),
 		"SELECT id_region, aonr FROM on_farm WHERE id_region=$1", regionID)
 	if err != nil {
@@ -138,16 +138,16 @@ func Query_trials(regionID string) ([]models.Simulation, error) {
 	}
 	defer rows.Close()
 
-	var sims []models.Simulation
+	var trials []models.Trials
 
     for rows.Next() {
-        var s models.Simulation
+        var t models.Trials
         // Match the columns in your SELECT statement: id_region, aonr
-        if err := rows.Scan(&s.IDRegion, &s.AONR); err != nil {
+        if err := rows.Scan(&t.IDRegion, &t.AONR); err != nil {
             log.Println("Row scan error:", err)
             continue
         }
-        sims = append(sims, s)
+        trials = append(trials, t)
     }
 
 
@@ -155,5 +155,5 @@ func Query_trials(regionID string) ([]models.Simulation, error) {
 		log.Printf("database rows error: %v", err)
 		return nil, err
 	}
-	return sims, nil
+	return trials, nil
 }
