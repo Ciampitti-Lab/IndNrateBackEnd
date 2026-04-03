@@ -138,13 +138,14 @@ func QueryEonrCount(regionID string, nitroPrice float64, grainPrice float64) ([]
 	}
 	defer rows.Close()
 
-	trials := make(map[int][]struct {
+	// Usamos string como key para evitar conversión
+	trials := make(map[string][]struct {
 		N float64
 		Y float64
 		R string
 	})
 
-    for rows.Next() {
+	for rows.Next() {
 		var idTrial string
 		var nitro, yield float64
 		var region string
@@ -165,11 +166,9 @@ func QueryEonrCount(regionID string, nitroPrice float64, grainPrice float64) ([]
 		return nil, err
 	}
 
-
 	var results []models.Eonr
 
 	for idTrial, data := range trials {
-
 		maxProfit := -1e18
 		eonr := 0.0
 		region := data[0].R
@@ -186,7 +185,7 @@ func QueryEonrCount(regionID string, nitroPrice float64, grainPrice float64) ([]
 		}
 
 		results = append(results, models.Eonr{
-			IDTrial: idTrial,
+			IDTrial: idTrial,  // ahora coincide con string
 			Region:  region,
 			EONR:    eonr,
 			Profit:  maxProfit,
