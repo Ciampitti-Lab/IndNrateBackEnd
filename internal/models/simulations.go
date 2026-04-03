@@ -9,4 +9,6 @@ type Simulation struct{
 	NitroPrice float64 `json:"nitro_price"` 
 	GrainPrice float64 `json:"grain_price"`	
 	Profit_dol float64 `json:"profit_dol"`
+	IDRegion string `json:"id_region`
+	AONR float64 `json:"aonr"`
 }

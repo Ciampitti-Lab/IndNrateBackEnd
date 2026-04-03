@@ -2,6 +2,7 @@ CREATE EXTENSION postgis;
 
 DROP TABLE IF EXISTS simulations;
 DROP TABLE IF EXISTS spatial_data;
+DROP TABLE IF EXISTS ON_FARM;
 
 ---------------------------
 -- Table for simulations --
@@ -13,6 +14,18 @@ CREATE TABLE simulations(
     yield_kg_ha FLOAT,
     PRIMARY KEY(id_sim)
     );
+
+
+------------------------------
+-- Table for on-farm trials --
+------------------------------
+CREATE TABLE on_farm(
+    id_trial INT,
+    id_region VARCHAR(64),
+    aonr FLOAT,
+    PRIMARY KEY(id_trial)
+    );
+
 
 
 

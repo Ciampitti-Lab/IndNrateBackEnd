@@ -99,7 +99,7 @@ func buildDSNFromParts() string {
 	return u.String()
 }
 
-func Query(cellID int, nitroPrice float64, grainPrice float64) ([]models.Simulation, error) {
+func Query_sim(cellID int, nitroPrice float64, grainPrice float64) ([]models.Simulation, error) {
 	rows, err := DB.Query(context.Background(),
 		"SELECT id_sim, id_cell, nitro_kg_ha, yield_kg_ha FROM simulations WHERE id_cell=$1", cellID)
 	if err != nil {
@@ -122,6 +122,35 @@ func Query(cellID int, nitroPrice float64, grainPrice float64) ([]models.Simulat
 		s.Profit_dol = (s.YieldBsAc * s.GrainPrice) - (s.NitroLbAc * s.NitroPrice)
 		sims = append(sims, s)
 	}
+	if err := rows.Err(); err != nil {
+		log.Printf("database rows error: %v", err)
+		return nil, err
+	}
+	return sims, nil
+}
+
+func Query_trials(regionID string) ([]models.Simulation, error) {
+	rows, err := DB.Query(context.Background(),
+		"SELECT id_region, aonr FROM on_farm WHERE id_region=$1", regionID)
+	if err != nil {
+		log.Printf("database query error: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var sims []models.Simulation
+
+    for rows.Next() {
+        var s models.Simulation
+        // Match the columns in your SELECT statement: id_region, aonr
+        if err := rows.Scan(&s.IDRegion, &s.AONR); err != nil {
+            log.Println("Row scan error:", err)
+            continue
+        }
+        sims = append(sims, s)
+    }
+
+
 	if err := rows.Err(); err != nil {
 		log.Printf("database rows error: %v", err)
 		return nil, err

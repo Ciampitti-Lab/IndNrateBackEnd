@@ -40,6 +40,28 @@ func main() {
 		})
 	})
 
+	router.GET("/onfarmtrials", func(c *gin.Context) {
+
+    regionID := c.Query("region")
+
+    if regionID == "" {
+        c.JSON(400, gin.H{"error": "region parameter is required"})
+        return
+    }
+
+	// Quering database
+    onfarm, err := database.Query_trials(regionID)
+    if err != nil {
+		fmt.Printf("Database error: %v\n", err)
+        c.JSON(500, gin.H{"error": "database query failed"})
+        return
+    }
+
+    c.JSON(200, onfarm)
+
+
+})
+
 
 	router.GET("/simresults", func(c *gin.Context) {
     cellStr := c.Query("cell")
@@ -82,7 +104,7 @@ func main() {
 		grainPrice = 4
 	}
 	// Quering database
-    sims, err := database.Query(cellID, nitroPrice, grainPrice)
+    sims, err := database.Query_sim(cellID, nitroPrice, grainPrice)
     if err != nil {
         c.JSON(500, gin.H{"error": "database query failed"})
         return
