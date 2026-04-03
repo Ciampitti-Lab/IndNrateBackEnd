@@ -12,7 +12,7 @@ type Simulation struct{
 }
 
 type Eonr struct {
-    IDTrial int     `json:"id_trial"`
+    IDTrial string     `json:"id_trial"`
     Region  string  `json:"region"`
     EONR    float64 `json:"eonr"`
     Profit  float64 `json:"profit"`

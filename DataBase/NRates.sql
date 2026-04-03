@@ -20,7 +20,7 @@ CREATE TABLE simulations(
 -- Table for on-farm trials --
 ------------------------------
 CREATE TABLE on_farm(
-    id_trial INT,
+    id_trial VARCHAR(64),
     id_region VARCHAR(64),
     aonr FLOAT,
     PRIMARY KEY(id_trial)

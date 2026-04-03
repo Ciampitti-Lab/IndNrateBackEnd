@@ -145,7 +145,7 @@ func QueryEonrCount(regionID string, nitroPrice float64, grainPrice float64) ([]
 	})
 
     for rows.Next() {
-		var idTrial int
+		var idTrial string
 		var nitro, yield float64
 		var region string
 
