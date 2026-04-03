@@ -138,28 +138,32 @@ func QueryEonrCount(regionID string, nitroPrice float64, grainPrice float64) ([]
 	}
 	defer rows.Close()
 
-	// Usamos string como key para evitar conversión
+
 	trials := make(map[string][]struct {
-		N float64
-		Y float64
+		N float64 
+		Y float64 
 		R string
 	})
 
 	for rows.Next() {
 		var idTrial string
-		var nitro, yield float64
+		var nitroKgHa, yieldKgHa float64
 		var region string
 
-		if err := rows.Scan(&idTrial, &nitro, &yield, &region); err != nil {
+		if err := rows.Scan(&idTrial, &nitroKgHa, &yieldKgHa, &region); err != nil {
 			log.Println("Row scan error:", err)
 			continue
 		}
+
+
+		nitroLbAc := nitroKgHa * 0.892
+		yieldBsAc := yieldKgHa / 62.77
 
 		trials[idTrial] = append(trials[idTrial], struct {
 			N float64
 			Y float64
 			R string
-		}{nitro, yield, region})
+		}{nitroLbAc, yieldBsAc, region})
 	}
 
 	if err := rows.Err(); err != nil {
@@ -174,7 +178,7 @@ func QueryEonrCount(regionID string, nitroPrice float64, grainPrice float64) ([]
 		region := data[0].R
 
 		for _, d := range data {
-			profit := d.Y*grainPrice - d.N*nitroPrice
+			profit := d.Y*grainPrice - d.N*nitroPrice 
 
 			if profit > maxProfit {
 				maxProfit = profit
@@ -185,10 +189,10 @@ func QueryEonrCount(regionID string, nitroPrice float64, grainPrice float64) ([]
 		}
 
 		results = append(results, models.Eonr{
-			IDTrial: idTrial,  // ahora coincide con string
+			IDTrial: idTrial,
 			Region:  region,
-			EONR:    eonr,
-			Profit:  maxProfit,
+			EONR:    eonr,     
+			Profit:  maxProfit, 
 		})
 	}
 
