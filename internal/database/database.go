@@ -12,6 +12,8 @@ import (
 	"github.com/JorgeJola/indnratebackend/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+
+	"gonum.org/v1/gonum/stat/poly"
 )
 
 var DB *pgxpool.Pool
@@ -100,7 +102,7 @@ func buildDSNFromParts() string {
 	return u.String()
 }
 
-func QuerySim(cellID int, nitroPrice float64, grainPrice float64) ([]models.Simulation, error) {
+func QuerySimWithCurve(cellID int, nitroPrice float64, grainPrice float64) ([]models.Simulation, error) {
 
 	rows, err := DB.Query(context.Background(),
 		"SELECT nitro_kg_ha, yield_kg_ha FROM simulations WHERE id_cell=$1", cellID)
@@ -110,7 +112,7 @@ func QuerySim(cellID int, nitroPrice float64, grainPrice float64) ([]models.Simu
 	}
 	defer rows.Close()
 
-	// group by nitrogen in lb/ac
+	// group by nitrogen (lb/ac)
 	group := make(map[float64][]float64)
 
 	for rows.Next() {
@@ -122,14 +124,14 @@ func QuerySim(cellID int, nitroPrice float64, grainPrice float64) ([]models.Simu
 			continue
 		}
 
-		// convert units
+		// conversions
 		nitroLb := nitroKg * 0.892
 		yieldBu := yieldKg / 62.77
 
 		// profit
 		profit := (yieldBu * grainPrice) - (nitroLb * nitroPrice)
 
-		// round (IMPORTANT to avoid float grouping issues)
+		// round nitrogen to avoid float issues
 		nitroLb = math.Round(nitroLb*100) / 100
 
 		group[nitroLb] = append(group[nitroLb], profit)
@@ -139,20 +141,44 @@ func QuerySim(cellID int, nitroPrice float64, grainPrice float64) ([]models.Simu
 		return nil, err
 	}
 
-	var result []models.Simulation
+	// -----------------------------
+	// STEP 1: aggregate averages
+	// -----------------------------
+	var x []float64
+	var y []float64
 
-	for nitroLb, profits := range group {
+	for nitro, profits := range group {
 
 		var sum float64
 		for _, p := range profits {
 			sum += p
 		}
 
-		avgProfit := sum / float64(len(profits))
+		avg := sum / float64(len(profits))
+
+		x = append(x, nitro)
+		y = append(y, avg)
+	}
+
+	// -----------------------------
+	// STEP 2: fit polynomial curve
+	// -----------------------------
+	deg := 2 // quadratic (recommended for N response curves)
+
+	coef := poly.Fit(x, y, deg, nil)
+
+	// -----------------------------
+	// STEP 3: generate new curve
+	// -----------------------------
+	var result []models.Simulation
+
+	for n := 89.0; n <= 268.0; n += 1 {
+
+		p := poly.Eval(coef, n)
 
 		result = append(result, models.Simulation{
-			NitroLbAc: nitroLb,
-			ProfitDol: avgProfit,
+			NitroLbAc: n,
+			ProfitDol: p,
 		})
 	}
 
