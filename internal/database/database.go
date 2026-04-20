@@ -12,8 +12,6 @@ import (
 	"github.com/JorgeJola/indnratebackend/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
-
-	"gonum.org/v1/gonum/stat/poly"
 )
 
 var DB *pgxpool.Pool
@@ -124,14 +122,13 @@ func QuerySimWithCurve(cellID int, nitroPrice float64, grainPrice float64) ([]mo
 			continue
 		}
 
-		// conversions
 		nitroLb := nitroKg * 0.892
 		yieldBu := yieldKg / 62.77
 
-		// profit
+
 		profit := (yieldBu * grainPrice) - (nitroLb * nitroPrice)
 
-		// round nitrogen to avoid float issues
+
 		nitroLb = math.Round(nitroLb*100) / 100
 
 		group[nitroLb] = append(group[nitroLb], profit)
@@ -141,9 +138,6 @@ func QuerySimWithCurve(cellID int, nitroPrice float64, grainPrice float64) ([]mo
 		return nil, err
 	}
 
-	// -----------------------------
-	// STEP 1: aggregate averages
-	// -----------------------------
 	var x []float64
 	var y []float64
 
@@ -160,16 +154,10 @@ func QuerySimWithCurve(cellID int, nitroPrice float64, grainPrice float64) ([]mo
 		y = append(y, avg)
 	}
 
-	// -----------------------------
-	// STEP 2: fit polynomial curve
-	// -----------------------------
-	deg := 2 // quadratic (recommended for N response curves)
+	deg := 2 
 
 	coef := poly.Fit(x, y, deg, nil)
 
-	// -----------------------------
-	// STEP 3: generate new curve
-	// -----------------------------
 	var result []models.Simulation
 
 	for n := 89.0; n <= 268.0; n += 1 {
