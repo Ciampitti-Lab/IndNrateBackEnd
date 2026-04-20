@@ -1,8 +1,7 @@
 package models
 type Simulation struct {
-	IDCell     int     `json:"id_cell"`
-	NitroLbAc  float64 `json:"nitro_lb_ac"`
-	ProfitDol  float64 `json:"profit_dol"`
+	NitroLbAc float64 `json:"nitro_lb_ac"`
+	ProfitDol float64 `json:"profit_dol"`
 }
 
 type Eonr struct {

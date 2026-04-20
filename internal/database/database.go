@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"net/url"
 	"os"
 	"strings"
@@ -101,34 +102,61 @@ func buildDSNFromParts() string {
 
 func QuerySim(cellID int, nitroPrice float64, grainPrice float64) ([]models.Simulation, error) {
 
-	rows, err := DB.Query(context.Background(), `
-		SELECT 
-			nitro_kg_ha * 0.892 AS nitro_lb_ac,
-			AVG(
-				(yield_kg_ha / 62.77) * $2 - (nitro_kg_ha * 0.892) * $1
-			) AS profit_dol
-		FROM simulations
-		WHERE id_cell = $3
-		GROUP BY nitro_kg_ha * 0.892
-		ORDER BY nitro_lb_ac;
-	`, nitroPrice, grainPrice, cellID)
-
+	rows, err := DB.Query(context.Background(),
+		"SELECT nitro_kg_ha, yield_kg_ha FROM simulations WHERE id_cell=$1", cellID)
 	if err != nil {
+		log.Printf("database query error: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
 
-	var sims []models.Simulation
+	// group by nitrogen in lb/ac
+	group := make(map[float64][]float64)
 
 	for rows.Next() {
-		var s models.Simulation
-		if err := rows.Scan(&s.IDCell, &s.NitroLbAc, &s.ProfitDol); err != nil {
-			return nil, err
+
+		var nitroKg, yieldKg float64
+
+		if err := rows.Scan(&nitroKg, &yieldKg); err != nil {
+			log.Println("Row scan error:", err)
+			continue
 		}
-		sims = append(sims, s)
+
+		// convert units
+		nitroLb := nitroKg * 0.892
+		yieldBu := yieldKg / 62.77
+
+		// profit
+		profit := (yieldBu * grainPrice) - (nitroLb * nitroPrice)
+
+		// round (IMPORTANT to avoid float grouping issues)
+		nitroLb = math.Round(nitroLb*100) / 100
+
+		group[nitroLb] = append(group[nitroLb], profit)
 	}
 
-	return sims, nil
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	var result []models.Simulation
+
+	for nitroLb, profits := range group {
+
+		var sum float64
+		for _, p := range profits {
+			sum += p
+		}
+
+		avgProfit := sum / float64(len(profits))
+
+		result = append(result, models.Simulation{
+			NitroLbAc: nitroLb,
+			ProfitDol: avgProfit,
+		})
+	}
+
+	return result, nil
 }
 
 func QueryEonrCount(regionID string, nitroPrice float64, grainPrice float64) ([]models.Eonr, error) {
