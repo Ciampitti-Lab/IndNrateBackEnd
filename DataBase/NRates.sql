@@ -8,11 +8,11 @@ DROP TABLE IF EXISTS ON_FARM;
 -- Table for simulations --
 ---------------------------
 CREATE TABLE simulations(
-    id_sim VARCHAR(64),
-    id_cell INT,
+    id_cell VARCHAR(64),
+    id_within_cell INT,
+    year INT,
     nitro_kg_ha INT,
     yield_kg_ha FLOAT,
-    PRIMARY KEY(id_sim)
     );
 
 
