@@ -12,6 +12,7 @@ import (
 	"github.com/JorgeJola/indnratebackend/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"gonum.org/v1/gonum/mat"
 )
 
 var DB *pgxpool.Pool
@@ -99,10 +100,41 @@ func buildDSNFromParts() string {
 	u.RawQuery = q.Encode()
 	return u.String()
 }
+func fitPoly2(x, y []float64) []float64 {
+
+	n := len(x)
+
+	X := mat.NewDense(n, 3, nil)
+	Y := mat.NewDense(n, 1, nil)
+
+	for i := 0; i < n; i++ {
+		X.Set(i, 0, 1)
+		X.Set(i, 1, x[i])
+		X.Set(i, 2, x[i]*x[i])
+
+		Y.Set(i, 0, y[i])
+	}
+
+	var xt mat.Dense
+	xt.Mul(X.T(), X)
+
+	var xty mat.Dense
+	xty.Mul(X.T(), Y)
+
+	var coef mat.Dense
+	coef.Solve(&xt, &xty)
+
+	return []float64{
+		coef.At(0, 0),
+		coef.At(1, 0),
+		coef.At(2, 0),
+	}
+}
+
 func evalPoly2(coef []float64, x float64) float64 {
 		return coef[0] + coef[1]*x + coef[2]*x*x
 	}
-	
+
 func QuerySim(cellID int, nitroPrice float64, grainPrice float64) ([]models.Simulation, error) {
 
 	rows, err := DB.Query(context.Background(),
@@ -156,8 +188,6 @@ func QuerySim(cellID int, nitroPrice float64, grainPrice float64) ([]models.Simu
 		x = append(x, nitro)
 		y = append(y, avg)
 	}
-
-	deg := 2 
 
 	coef := fitPoly2(x, y)
 
