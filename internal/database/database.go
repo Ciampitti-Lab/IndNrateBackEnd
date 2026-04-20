@@ -99,8 +99,11 @@ func buildDSNFromParts() string {
 	u.RawQuery = q.Encode()
 	return u.String()
 }
-
-func QuerySimWithCurve(cellID int, nitroPrice float64, grainPrice float64) ([]models.Simulation, error) {
+func evalPoly2(coef []float64, x float64) float64 {
+		return coef[0] + coef[1]*x + coef[2]*x*x
+	}
+	
+func QuerySim(cellID int, nitroPrice float64, grainPrice float64) ([]models.Simulation, error) {
 
 	rows, err := DB.Query(context.Background(),
 		"SELECT nitro_kg_ha, yield_kg_ha FROM simulations WHERE id_cell=$1", cellID)
@@ -156,13 +159,13 @@ func QuerySimWithCurve(cellID int, nitroPrice float64, grainPrice float64) ([]mo
 
 	deg := 2 
 
-	coef := poly.Fit(x, y, deg, nil)
+	coef := fitPoly2(x, y)
 
 	var result []models.Simulation
-
+	
 	for n := 89.0; n <= 268.0; n += 1 {
 
-		p := poly.Eval(coef, n)
+		p := evalPoly2(coef, n)
 
 		result = append(result, models.Simulation{
 			NitroLbAc: n,
