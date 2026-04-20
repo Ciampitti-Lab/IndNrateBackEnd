@@ -101,7 +101,7 @@ func buildDSNFromParts() string {
 
 func QuerySim(cellID int, nitroPrice float64, grainPrice float64) ([]models.Simulation, error) {
 	rows, err := DB.Query(context.Background(),
-		"SELECT id_sim, id_cell, nitro_kg_ha, yield_kg_ha FROM simulations WHERE id_cell=$1", cellID)
+		"SELECT id_cell, id_within_cell, year, nitro_kg_ha, yield_kg_ha FROM simulations WHERE id_cell=$1", cellID)
 	if err != nil {
 		log.Printf("database query error: %v", err)
 		return nil, err
@@ -111,7 +111,7 @@ func QuerySim(cellID int, nitroPrice float64, grainPrice float64) ([]models.Simu
 	var sims []models.Simulation
 	for rows.Next() {
 		var s models.Simulation
-		if err := rows.Scan(&s.IDSim, &s.IDCell, &s.NitroKgHa, &s.YieldKgHa); err != nil {
+		if err := rows.Scan(&s.IDCell, &s.IDWithinCell, &s.Year, &s.NitroKgHa, &s.YieldKgHa); err != nil {
 			log.Println("Row scan error:", err)
 			continue
 		}
@@ -171,7 +171,7 @@ func QueryEonrCount(regionID string, nitroPrice float64, grainPrice float64) ([]
 	}
 
 	var results []models.Eonr
-
+	// Calculates EONR iterating through all trials
 	for idTrial, data := range trials {
 		maxProfit := -1e18
 		eonr := 0.0

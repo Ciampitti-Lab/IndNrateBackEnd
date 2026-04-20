@@ -1,7 +1,8 @@
 package models
 type Simulation struct{
-	IDSim      string     `json:"id_sim"`      // maps to id_sim column
 	IDCell     int     `json:"id_cell"`     // maps to id_cell column
+	IDWithinCell     int     `json:"id_within_cell"`     // maps to id_within_cell column
+	Year     int     `json:"id_within_cell"`     // maps to id_within_cell column
     NitroKgHa  float64 `json:"nitro_kg_ha"` // Nitrogen in kg/ha
 	NitroLbAc  float64 `json:"nitro_lb_ac"` // Nitrogen in lb/ac
     YieldKgHa  float64 `json:"yield_kg_ha"` // Yield in Kg/ha
