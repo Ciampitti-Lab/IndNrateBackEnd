@@ -103,15 +103,14 @@ func QuerySim(cellID int, nitroPrice float64, grainPrice float64) ([]models.Simu
 
 	rows, err := DB.Query(context.Background(), `
 		SELECT 
-			id_cell,
 			nitro_kg_ha * 0.892 AS nitro_lb_ac,
 			AVG(
 				(yield_kg_ha / 62.77) * $2 - (nitro_kg_ha * 0.892) * $1
 			) AS profit_dol
 		FROM simulations
 		WHERE id_cell = $3
-		GROUP BY id_cell, nitro_lb_ac
-		ORDER BY nitro_lb_ac
+		GROUP BY nitro_kg_ha * 0.892
+		ORDER BY nitro_lb_ac;
 	`, nitroPrice, grainPrice, cellID)
 
 	if err != nil {
