@@ -117,6 +117,7 @@ func QuerySim(cellID int, nitroPrice float64, grainPrice float64) ([]models.Simu
 		}
 		s.NitroPrice = nitroPrice
 		s.GrainPrice = grainPrice
+		s.Year = s.Year
 		s.NitroLbAc = s.NitroKgHa * 0.892
 		s.YieldBsAc = s.YieldKgHa / 62.77
 		s.Profit_dol = (s.YieldBsAc * s.GrainPrice) - (s.NitroLbAc * s.NitroPrice)
