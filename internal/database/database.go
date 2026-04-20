@@ -100,33 +100,35 @@ func buildDSNFromParts() string {
 }
 
 func QuerySim(cellID int, nitroPrice float64, grainPrice float64) ([]models.Simulation, error) {
-	rows, err := DB.Query(context.Background(),
-		"SELECT id_cell, id_within_cell, year, nitro_kg_ha, yield_kg_ha FROM simulations WHERE id_cell=$1", cellID)
+
+	rows, err := DB.Query(context.Background(), `
+		SELECT 
+			id_cell,
+			nitro_kg_ha * 0.892 AS nitro_lb_ac,
+			AVG(
+				(yield_kg_ha / 62.77) * $2 - (nitro_kg_ha * 0.892) * $1
+			) AS profit_dol
+		FROM simulations
+		WHERE id_cell = $3
+		GROUP BY id_cell, nitro_lb_ac
+		ORDER BY nitro_lb_ac
+	`, nitroPrice, grainPrice, cellID)
+
 	if err != nil {
-		log.Printf("database query error: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
 
 	var sims []models.Simulation
+
 	for rows.Next() {
 		var s models.Simulation
-		if err := rows.Scan(&s.IDCell, &s.IDWithinCell, &s.Year, &s.NitroKgHa, &s.YieldKgHa); err != nil {
-			log.Println("Row scan error:", err)
-			continue
+		if err := rows.Scan(&s.IDCell, &s.NitroLbAc, &s.ProfitDol); err != nil {
+			return nil, err
 		}
-		s.NitroPrice = nitroPrice
-		s.GrainPrice = grainPrice
-		s.Year = s.Year
-		s.NitroLbAc = s.NitroKgHa * 0.892
-		s.YieldBsAc = s.YieldKgHa / 62.77
-		s.Profit_dol = (s.YieldBsAc * s.GrainPrice) - (s.NitroLbAc * s.NitroPrice)
 		sims = append(sims, s)
 	}
-	if err := rows.Err(); err != nil {
-		log.Printf("database rows error: %v", err)
-		return nil, err
-	}
+
 	return sims, nil
 }
 
