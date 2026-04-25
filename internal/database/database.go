@@ -287,10 +287,7 @@ func QueryNitroPrices(startDate, endDate time.Time, source string) ([]models.Nit
 		ORDER BY date ASC
 	`
 
-	start := time.Date(startDate.Year(), startDate.Month(), startDate.Day(), 0, 0, 0, 0, time.UTC)
-	end := time.Date(endDate.Year(), endDate.Month(), endDate.Day(), 0, 0, 0, 0, time.UTC).Add(24 * time.Hour)
-
-	rows, err := DB.Query(context.Background(), query, start, end, source)
+	rows, err := DB.Query(context.Background(), query, startDate, endDate, source)
 	if err != nil {
 		return nil, err
 	}
@@ -305,6 +302,39 @@ func QueryNitroPrices(startDate, endDate time.Time, source string) ([]models.Nit
 			&np.Date,
 			&np.NitroSource,
 			&np.NitroPriceLb,
+		); err != nil {
+			return nil, err
+		}
+
+		results = append(results, np)
+	}
+
+	return results, rows.Err()
+}
+
+func QueryCornPrices(startDate, endDate time.Time, source string) ([]models.CornPrice, error) {
+
+	query := `
+		SELECT date, corn_price_lb
+		FROM corn_prices
+		WHERE date >= $1 AND date < $2
+		ORDER BY date ASC
+	`
+
+	rows, err := DB.Query(context.Background(), query, startDate, endDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []models.CornPrice
+
+	for rows.Next() {
+		var np models.CornPrice
+
+		if err := rows.Scan(
+			&np.Date,
+			&np.CornPriceLb,
 		); err != nil {
 			return nil, err
 		}

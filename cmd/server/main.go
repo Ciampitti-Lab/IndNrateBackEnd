@@ -125,6 +125,35 @@ func main() {
 		c.JSON(200, data)
 	})
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Historical Corn Prices
+	router.GET("/corn_prices", func(c *gin.Context) {
+
+		dateStr := c.Query("date")
+
+		if dateStr == "" {
+			c.JSON(400, gin.H{"error": "date and source are required"})
+			return
+		}
+
+		date, err := time.Parse("2006-01-02", dateStr)
+		if err != nil {
+			c.JSON(400, gin.H{
+				"error": "invalid date format, use YYYY-MM-DD",
+			})
+			return
+		}
+		
+		startDate := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
+		endDate := startDate.Add(24 * time.Hour)
+		data, err := database.QueryNitroPrices(startDate, endDate)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "database query failed"})
+			return
+		}
+
+		c.JSON(200, data)
+	})
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Simulations Results

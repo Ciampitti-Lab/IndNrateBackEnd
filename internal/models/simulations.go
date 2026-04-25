@@ -18,3 +18,8 @@ type NitroPrice struct {
 	NitroSource  string    `json:"nitro_source"`
 	NitroPriceLb float64   `json:"nitro_price_lb"`
 }
+
+type CornPrice struct {
+	Date         time.Time `json:"date"`
+	CornPriceLb float64   `json:"corn_price_lb"`
+}
