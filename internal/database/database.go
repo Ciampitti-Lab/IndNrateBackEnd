@@ -290,13 +290,7 @@ func QueryNitroPrices(startDate, endDate time.Time, source string) ([]models.Nit
 	start := time.Date(startDate.Year(), startDate.Month(), startDate.Day(), 0, 0, 0, 0, time.UTC)
 	end := time.Date(endDate.Year(), endDate.Month(), endDate.Day(), 0, 0, 0, 0, time.UTC).Add(24 * time.Hour)
 
-	rows, err := DB.QueryContext(
-		context.Background(),
-		query,
-		start,
-		end,
-		source,
-	)
+	rows, err := DB.Query(context.Background(), query, start, end, source)
 	if err != nil {
 		return nil, err
 	}
