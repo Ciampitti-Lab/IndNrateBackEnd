@@ -113,7 +113,9 @@ func main() {
 			})
 			return
 		}
-
+		
+		startDate := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
+		endDate := startDate.Add(24 * time.Hour)
 		data, err := database.QueryNitroPrices(startDate, endDate, source)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "database query failed"})
