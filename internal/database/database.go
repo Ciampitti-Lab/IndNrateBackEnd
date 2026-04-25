@@ -277,15 +277,26 @@ func QueryEonrCount(regionID string, nitroPrice float64, grainPrice float64) ([]
 	return results, nil
 }
 
-func QueryNitroPrices(date time.Time) ([]models.NitroPrice, error) {
+func QueryNitroPricesRange(startDate, endDate time.Time, source string) ([]models.NitroPrice, error) {
 
 	query := `
 		SELECT date, nitro_source, nitro_price_lb
 		FROM nitro_prices
-		WHERE DATE(date) = $1
+		WHERE date >= $1 AND date < $2
+		AND nitro_source = $3
+		ORDER BY date ASC
 	`
 
-	rows, err := DB.Query(query, date)
+	start := time.Date(startDate.Year(), startDate.Month(), startDate.Day(), 0, 0, 0, 0, time.UTC)
+	end := time.Date(endDate.Year(), endDate.Month(), endDate.Day(), 0, 0, 0, 0, time.UTC).Add(24 * time.Hour)
+
+	rows, err := DB.QueryContext(
+		context.Background(),
+		query,
+		start,
+		end,
+		source,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -307,9 +318,5 @@ func QueryNitroPrices(date time.Time) ([]models.NitroPrice, error) {
 		results = append(results, np)
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return results, nil
+	return results, rows.Err()
 }
