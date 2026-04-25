@@ -114,7 +114,7 @@ func main() {
 			return
 		}
 
-		data, err := database.QueryNitroPrices(date, source)
+		data, err := database.QueryNitroPrices(startDate time.Time, endDate time.Time, source string)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "database query failed"})
 			return
