@@ -277,7 +277,7 @@ func QueryEonrCount(regionID string, nitroPrice float64, grainPrice float64) ([]
 	return results, nil
 }
 
-func QueryNitroPricesRange(startDate, endDate time.Time, source string) ([]models.NitroPrice, error) {
+func QueryNitroPrices(startDate, endDate time.Time, source string) ([]models.NitroPrice, error) {
 
 	query := `
 		SELECT date, nitro_source, nitro_price_lb
