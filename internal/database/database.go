@@ -315,7 +315,7 @@ func QueryNitroPrices(startDate, endDate time.Time, source string) ([]models.Nit
 func QueryCornPrices(startDate, endDate time.Time) ([]models.CornPrice, error) {
 
 	query := `
-		SELECT date, corn_price_lb
+		SELECT date, corn_price_bu
 		FROM corn_prices
 		WHERE date >= $1 AND date < $2
 		ORDER BY date ASC

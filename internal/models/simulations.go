@@ -21,5 +21,5 @@ type NitroPrice struct {
 
 type CornPrice struct {
 	Date         time.Time `json:"date"`
-	CornPriceLb float64   `json:"corn_price_lb"`
+	CornPriceLb float64   `json:"corn_price_bu"`
 }
