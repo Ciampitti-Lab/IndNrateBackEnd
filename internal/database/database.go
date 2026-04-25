@@ -312,7 +312,7 @@ func QueryNitroPrices(startDate, endDate time.Time, source string) ([]models.Nit
 	return results, rows.Err()
 }
 
-func QueryCornPrices(startDate, endDate time.Time, source string) ([]models.CornPrice, error) {
+func QueryCornPrices(startDate, endDate time.Time) ([]models.CornPrice, error) {
 
 	query := `
 		SELECT date, corn_price_lb
