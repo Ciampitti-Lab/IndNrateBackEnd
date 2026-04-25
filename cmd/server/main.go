@@ -40,6 +40,9 @@ func main() {
 		})
 	})
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// EONR COUNTING
 	router.GET("/onfarmtrials/eonr_count", func(c *gin.Context) {
 
     regionID := c.Query("region")
@@ -91,7 +94,38 @@ func main() {
 
 })
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Historical Nitrogen Prices
+	router.GET("/nitro_prices", func(c *gin.Context) {
 
+		dateStr := c.Query("date")
+		source := c.Query("source")
+
+		if dateStr == "" || source == "" {
+			c.JSON(400, gin.H{"error": "date and source are required"})
+			return
+		}
+
+		date, err := time.Parse("2006-01-02", dateStr)
+		if err != nil {
+			c.JSON(400, gin.H{
+				"error": "invalid date format, use YYYY-MM-DD",
+			})
+			return
+		}
+
+		data, err := database.QueryNitroPrices(date, source)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "database query failed"})
+			return
+		}
+
+		c.JSON(200, data)
+	})
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Simulations Results
 	router.GET("/simresults", func(c *gin.Context) {
     cellStr := c.Query("cell")
     if cellStr == "" {
@@ -148,6 +182,7 @@ func main() {
 	if err := router.Run(addr); err != nil {
 		log.Fatal(err)
 	}
+
 }
 
 func listenAddr() string {
@@ -158,5 +193,8 @@ func listenAddr() string {
 	return "0.0.0.0:" + port
 }
 
+
+
+	
 
 

@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/JorgeJola/indnratebackend/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -271,6 +272,43 @@ func QueryEonrCount(regionID string, nitroPrice float64, grainPrice float64) ([]
 			EONR:    eonr,     
 			Profit:  maxProfit, 
 		})
+	}
+
+	return results, nil
+}
+
+func QueryNitroPrices(date time.Time) ([]models.NitroPrice, error) {
+
+	query := `
+		SELECT date, nitro_source, nitro_price_lb
+		FROM nitro_prices
+		WHERE DATE(date) = $1
+	`
+
+	rows, err := DB.Query(query, date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []models.NitroPrice
+
+	for rows.Next() {
+		var np models.NitroPrice
+
+		if err := rows.Scan(
+			&np.Date,
+			&np.NitroSource,
+			&np.NitroPriceLb,
+		); err != nil {
+			return nil, err
+		}
+
+		results = append(results, np)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return results, nil
