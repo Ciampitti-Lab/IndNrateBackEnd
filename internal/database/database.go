@@ -7,13 +7,13 @@ import (
 	"math"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/JorgeJola/indnratebackend/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
-	"gonum.org/v1/gonum/mat"
 )
 
 var DB *pgxpool.Pool
@@ -101,41 +101,6 @@ func buildDSNFromParts() string {
 	u.RawQuery = q.Encode()
 	return u.String()
 }
-func fitPoly2(x, y []float64) []float64 {
-
-	n := len(x)
-
-	X := mat.NewDense(n, 3, nil)
-	Y := mat.NewDense(n, 1, nil)
-
-	for i := 0; i < n; i++ {
-		X.Set(i, 0, 1)
-		X.Set(i, 1, x[i])
-		X.Set(i, 2, x[i]*x[i])
-
-		Y.Set(i, 0, y[i])
-	}
-
-	var xt mat.Dense
-	xt.Mul(X.T(), X)
-
-	var xty mat.Dense
-	xty.Mul(X.T(), Y)
-
-	var coef mat.Dense
-	coef.Solve(&xt, &xty)
-
-	return []float64{
-		coef.At(0, 0),
-		coef.At(1, 0),
-		coef.At(2, 0),
-	}
-}
-
-func evalPoly2(coef []float64, x float64) float64 {
-		return coef[0] + coef[1]*x + coef[2]*x*x
-	}
-
 func QuerySim(cellID int, plantingDate int, nitroPrice float64, grainPrice float64) ([]models.Simulation, error) {
 
 	rows, err := DB.Query(context.Background(),
@@ -143,18 +108,17 @@ func QuerySim(cellID int, plantingDate int, nitroPrice float64, grainPrice float
 		 FROM simulations 
 		 WHERE id_cell=$1 AND planting_date=$2`,
 		cellID, plantingDate)
-		
+
 	if err != nil {
 		log.Printf("database query error: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
 
-	// group by nitrogen (lb/ac)
+	// group by nitroLb -> []profit (all years, all fields)
 	group := make(map[float64][]float64)
 
 	for rows.Next() {
-
 		var nitroKg, yieldKg float64
 
 		if err := rows.Scan(&nitroKg, &yieldKg); err != nil {
@@ -162,14 +126,9 @@ func QuerySim(cellID int, plantingDate int, nitroPrice float64, grainPrice float
 			continue
 		}
 
-		nitroLb := nitroKg * 0.892
+		nitroLb := math.Round(nitroKg*0.892*100) / 100
 		yieldBu := yieldKg / 62.77
-
-
 		profit := (yieldBu * grainPrice) - (nitroLb * nitroPrice)
-
-
-		nitroLb = math.Round(nitroLb*100) / 100
 
 		group[nitroLb] = append(group[nitroLb], profit)
 	}
@@ -178,35 +137,26 @@ func QuerySim(cellID int, plantingDate int, nitroPrice float64, grainPrice float
 		return nil, err
 	}
 
-	var x []float64
-	var y []float64
+	// average profit per nitro dose
+	var result []models.Simulation
 
 	for nitro, profits := range group {
-
 		var sum float64
 		for _, p := range profits {
 			sum += p
 		}
-
 		avg := sum / float64(len(profits))
 
-		x = append(x, nitro)
-		y = append(y, avg)
-	}
-
-	coef := fitPoly2(x, y)
-
-	var result []models.Simulation
-	
-	for n := 0.0; n <= 268.0; n += 1 {
-
-		p := evalPoly2(coef, n)
-
 		result = append(result, models.Simulation{
-			NitroLbAc: n,
-			ProfitDol: p,
+			NitroLbAc: nitro,
+			ProfitDol: avg,
 		})
 	}
+
+	// sort by nitro for clean output
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].NitroLbAc < result[j].NitroLbAc
+	})
 
 	return result, nil
 }

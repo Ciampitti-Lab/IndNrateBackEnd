@@ -1,7 +1,6 @@
 CREATE EXTENSION postgis;
 
 DROP TABLE IF EXISTS simulations;
-DROP TABLE IF EXISTS spatial_data;
 DROP TABLE IF EXISTS ON_FARM;
 
 ---------------------------
