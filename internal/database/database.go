@@ -9,7 +9,6 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/JorgeJola/indnratebackend/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -231,70 +230,3 @@ func QueryEonrCount(regionID string, nitroPrice float64, grainPrice float64) ([]
 	return results, nil
 }
 
-func QueryNitroPrices(startDate, endDate time.Time, source string) ([]models.NitroPrice, error) {
-
-	query := `
-		SELECT date, nitro_source, nitro_price_lb
-		FROM nitro_prices
-		WHERE date >= $1 AND date < $2
-		AND nitro_source = $3
-		ORDER BY date ASC
-	`
-
-	rows, err := DB.Query(context.Background(), query, startDate, endDate, source)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var results []models.NitroPrice
-
-	for rows.Next() {
-		var np models.NitroPrice
-
-		if err := rows.Scan(
-			&np.Date,
-			&np.NitroSource,
-			&np.NitroPriceLb,
-		); err != nil {
-			return nil, err
-		}
-
-		results = append(results, np)
-	}
-
-	return results, rows.Err()
-}
-
-func QueryCornPrices(startDate, endDate time.Time) ([]models.CornPrice, error) {
-
-	query := `
-		SELECT date, corn_price_bu
-		FROM corn_prices
-		WHERE date >= $1 AND date < $2
-		ORDER BY date ASC
-	`
-
-	rows, err := DB.Query(context.Background(), query, startDate, endDate)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var results []models.CornPrice
-
-	for rows.Next() {
-		var np models.CornPrice
-
-		if err := rows.Scan(
-			&np.Date,
-			&np.CornPriceLb,
-		); err != nil {
-			return nil, err
-		}
-
-		results = append(results, np)
-	}
-
-	return results, rows.Err()
-}
